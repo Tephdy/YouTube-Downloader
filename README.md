@@ -1,1 +1,2 @@
 # YouTube-Downloader
+Simplified version
