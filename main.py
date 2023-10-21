@@ -6,7 +6,17 @@ from tkinter import filedialog
 from tkinter import PhotoImage
 import os
 import threading
+
 def start_download():
+
+    if youtube_info_frame.winfo_viewable():
+        downloading_label_var.set("Downloading...")
+        loading_bar['value']=0
+        loading_subtitle.config(text="")
+        loading_frame.pack_forget()
+        youtube_info_frame.pack_forget()
+        download_finish.pack_forget()
+
     search_frame_var.set("Wait for the download to finish...")
     youtube_link_info_frame.pack(fill='x',pady=15)
     pre_notif.config(text="Fetching data...")
@@ -46,7 +56,11 @@ def start_download():
 
         youtube_info_frame.pack(fill='x',padx=15)
 
-        if file_path:
+        if str(file_path)=="":
+            loading_frame.pack_forget()
+            youtube_info_frame.pack_forget()
+            search_frame_var.set("Insert YouTube Link")
+        else:
             # The user selected a file path, so we can save the video there
             # Get the highest resolution stream and download the video
             stream = yt.streams.get_highest_resolution()
@@ -75,6 +89,7 @@ def on_progress(stream, chunks, bytes_remaining):
     percent_of_completion= bytes_downloaded/total_size*100
     per=str(int(percent_of_completion))
     loading_subtitle.config(text=per + '%')
+    loading_bar['value']=str(per)
 
     if per=="100":
         search_frame_var.set("Insert YouTube Link")
@@ -82,11 +97,11 @@ def on_progress(stream, chunks, bytes_remaining):
         loading_subtitle.config(text="FINISH!")
         # search_btn.pack_forget()
         downloading_label_var.set("Downloaded")
-        loading_frame.pack_forget()
         download_finish.pack(fill='x',pady=5)
     else:
         search_entry.config(state="disabled")
         downloading_label_var.set("Downloading...")
+        download_finish.pack_forget()
 
     url_var.set("")
     loading_subtitle.update()
@@ -182,7 +197,7 @@ downloading_label.pack(fill='x')
 # downloading_label
 
 # loading_bar
-loading_bar=ttb.Progressbar(loading_frame, style="danger", mode="determinate", maximum=100, length=200)
+loading_bar=ttb.Progressbar(loading_frame, style="danger", mode="determinate", maximum=100, length=400, value=0)
 loading_bar.pack(fill='x',pady=5, ipady=5)
 # loading_bar
 
