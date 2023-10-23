@@ -1,4 +1,5 @@
 from pytube import YouTube, request
+from moviepy.editor import *
 import ttkbootstrap as ttb
 from ttkbootstrap import Style
 import tkinter as ttk
@@ -65,6 +66,71 @@ def start_download():
             # Get the highest resolution stream and download the video
             stream = yt.streams.get_highest_resolution()
             stream.download(output_path=file_path)
+
+    except Exception as e:
+        download_status.config(text=str(e),
+                               fg="#dc3545")
+        youtube_info_frame.pack_forget()
+
+def start_download_mp3():
+
+    if youtube_info_frame.winfo_viewable():
+        downloading_label_var.set("Downloading...")
+        loading_bar['value']=0
+        loading_subtitle.config(text="")
+        loading_frame.pack_forget()
+        youtube_info_frame.pack_forget()
+        download_finish.pack_forget()
+
+    search_frame_var.set("Wait for the download to finish...")
+    youtube_link_info_frame.pack(fill='x',pady=15)
+    pre_notif.config(text="Fetching data...")
+    try:
+        video_url = url_var.get()
+        yt = YouTube(video_url,on_progress_callback=on_progress)
+
+        # Get the video title
+        video_title = yt.title
+        title_formatted=video_title[0:40]
+        vidTitle.set(title_formatted+"...")
+
+        # Get the video duration
+        video_length = yt.length
+        video_duration_formatted = str(int(video_length // 3600)).zfill(2) + ":" + str(int((
+            video_length % 3600) // 60)).zfill(2) + ":" + str(int(video_length % 60)).zfill(2)
+        vidDuration.set(video_duration_formatted)
+
+        # get publish date
+        date_publish = str(yt.publish_date)
+        vid_publish_var.set(date_publish)
+
+        # get the file_size
+        stream = yt.streams.first()
+        vid_size=stream.filesize_mb
+        vid_file_size_var.set(str(vid_size)+" mb")
+
+        # Ask the user where to save the video with the default filename set to the video title
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".mp3",
+            initialfile=f"{video_title}.mp3",
+            filetypes=[("MP3 files", "*.mp3"), ("All files", "*.*")]
+        )
+        pre_notif.config(text="")
+
+        loading_frame.pack(fill='x',padx=15)
+
+        youtube_info_frame.pack(fill='x',padx=15)
+
+        if str(file_path)=="":
+            loading_frame.pack_forget()
+            youtube_info_frame.pack_forget()
+            search_frame_var.set("Insert YouTube Link")
+        else:
+            # The user selected a file path, so we can save the video there
+            # Get the highest resolution stream and download the video
+            stream = yt.streams.filter(only_audio=True, file_extension='mp3')
+            to_mp3=yt.streams.get_by_itag(249)
+            to_mp3.download(output_path=file_path)
     except Exception as e:
         download_status.config(text=str(e),
                                fg="#dc3545")
@@ -77,11 +143,20 @@ def start_download_thread():
     # Start the thread
     download_thread.start()
 
+def start_download_thread_mp3():
+    # Create a thread for the download function
+    download_thread = threading.Thread(target=start_download_mp3)
+
+    # Start the thread
+    download_thread.start()
+
 def check_entry_contents(*args):
     if url_var.get():
         search_btn.config(state="normal")
+        mp3_btn.config(state="normal")
     else:
         search_btn.config(state="disabled")
+        mp3_btn.config(state="disabled")
 
 def on_progress(stream, chunks, bytes_remaining):
     total_size=stream.filesize
@@ -133,8 +208,8 @@ header_frame.pack(fill='x', ipadx=15, ipady=10)
 
 # header_icon
 
-new_width=40
-new_height=40
+new_width=50
+new_height=50
 
 icon_path = os.path.abspath("icons/online-video.png")
 window.iconphoto(True, ttk.PhotoImage(file=icon_path))
@@ -142,6 +217,7 @@ header_icon=PhotoImage(file="icons/online-video.png")
 
 header_icon=header_icon.subsample(int(header_icon.width()/new_width), int(header_icon.height()/new_height))
 header_icon_label=ttb.Label(header_frame, image=header_icon)
+header_icon_label.config(background=background_color)
 header_icon_label.pack(side="left", padx=15)
 # header_icon
 
@@ -174,11 +250,25 @@ search_entry.pack(fill='x', pady=10, ipady=10)
 download_status=ttk.Label(search_frame, text="", font="Arial 9 bold")
 # download_status
 
+# search_btn_frame
+search_btn_frame=ttb.Frame(search_frame)
+search_btn_frame.pack(fill='both', pady=10,expand=True)
+search_btn_frame.columnconfigure((0,1), weight=2)
+# search_btn_frame
+
 # search_btn
-search_btn=ttb.Button(search_frame, text="Download", style="danger", width=20, command=start_download_thread,
+search_btn=ttb.Button(search_btn_frame, text="Download MP4", style="danger", width=20, command=start_download_thread,
                       state="disabled")
-search_btn.pack(ipady=7,pady=10)
+# search_btn.pack(side="left",ipady=7, fill='x')
+search_btn.grid(row=0, column=0, sticky="nsew", ipady=7,)
 # search_btn
+
+# mp3_btn
+mp3_btn=ttb.Button(search_btn_frame, text="Download MP3", style="success", state="disabled",
+                   command=start_download_thread_mp3, width=20)
+# mp3_btn.pack(side="left", padx=5,ipady=7, fill='x')
+mp3_btn.grid(row=0, column=1, sticky='nsew',padx=5,ipady=7)
+# mp3_btn
 
 # pre_notif
 pre_notif=ttb.Label(search_frame, text="")
